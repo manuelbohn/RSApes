@@ -9,33 +9,139 @@ knitr::opts_chunk$set(echo = TRUE)
 library(readxl)
 library(ggalluvial)
 library(tidyverse)
+library(ggthemes)
 ```
 
 ```{r}
 data <- read_xlsx("../data/Rawdata_Compositionality_18122019.xlsx", sheet = 1)
 ```
-```{r}
+# Context to reaction
 
+```{r}
 data %>%
   group_by(#rel_dom,
-           face,context_dyad, GEST, REACT)%>%
+           #face,
+           context_dyad, 
+           #GEST, 
+           REACT)%>%
+  summarise(freq = n())%>%
+  filter(#rel_dom != "NA", 
+         #face != "NA",
+         context_dyad != "NA",
+         #GEST != "NA",
+         REACT != "NA")%>%
+  ggplot(.,
+       aes(axis1 = context_dyad, 
+           #axis2 = face, 
+           #axis3 = GEST, 
+           axis4 = REACT,
+           y = freq)) +
+  scale_x_discrete(limits = c("Context","Reaction"), expand = c(.2, .05)) +
+  geom_alluvium(aes(fill = context_dyad)) +
+  geom_stratum() +
+  geom_text(stat = "stratum", aes(label = after_stat(stratum))) +
+  theme_minimal() +
+  scale_fill_colorblind()
+
+```
+Negative context leads almost exclusively to avoid reaction, but not the other way round.
+
+# Context to reaction by gesture
+
+```{r}
+data %>%
+  group_by(#rel_dom,
+           #face,
+           context_dyad, 
+           GEST, 
+           REACT)%>%
+  summarise(freq = n())%>%
+  filter(#rel_dom != "NA", 
+         #face != "NA",
+         context_dyad != "NA",
+         #GEST != "NA",
+         REACT != "NA")%>%
+  ggplot(.,
+       aes(axis1 = context_dyad, 
+           #axis2 = face, 
+           #axis3 = GEST, 
+           axis4 = REACT,
+           y = freq)) +
+  scale_x_discrete(limits = c("Context","Reaction"), expand = c(.2, .05)) +
+  geom_alluvium(aes(fill =GEST)) +
+  geom_stratum() +
+  geom_text(stat = "stratum", aes(label = after_stat(stratum))) +
+  theme_minimal()+
+  scale_fill_colorblind()
+
+```
+
+Gesture seems to be not very predictive when it comes to differentiating the path from positive to affiliate and positive to avoid. 
+
+# Context to reaction by facial expression
+
+```{r}
+data %>%
+  group_by(#rel_dom,
+           face,
+           context_dyad, 
+           #GEST, 
+           REACT)%>%
   summarise(freq = n())%>%
   filter(#rel_dom != "NA", 
          face != "NA",
          context_dyad != "NA",
-         GEST != "NA",
+         #GEST != "NA",
          REACT != "NA")%>%
   ggplot(.,
        aes(axis1 = context_dyad, 
-           axis2 = face, 
-           axis3 = GEST, axis4 = REACT,
+           #axis2 = face, 
+           #axis3 = GEST, 
+           axis4 = REACT,
            y = freq)) +
-  scale_x_discrete(limits = c("Context","Face" ,"Gesture", "Reaction"), expand = c(.2, .05)) +
-  geom_alluvium(#aes(fill = rel_dom)
-                ) +
+  scale_x_discrete(limits = c("Context","Reaction"), expand = c(.2, .05)) +
+  geom_alluvium(aes(fill =face)) +
   geom_stratum() +
   geom_text(stat = "stratum", aes(label = after_stat(stratum))) +
-  theme_minimal()
+  theme_minimal()+
+  scale_fill_colorblind()
 
 ```
+
+Hoot facial expressions seem to be more pronounced in the positive to avoid trajectory
+
+
+# Context to reaction by dominance
+
+```{r}
+data %>%
+  group_by(rel_dom,
+           #face,
+           context_dyad, 
+           #GEST, 
+           REACT)%>%
+  summarise(freq = n())%>%
+  filter(rel_dom != "NA", 
+         #face != "NA",
+         context_dyad != "NA",
+         #GEST != "NA",
+         REACT != "NA")%>%
+  ggplot(.,
+       aes(axis1 = context_dyad, 
+           #axis2 = face, 
+           #axis3 = GEST, 
+           axis4 = REACT,
+           y = freq)) +
+  scale_x_discrete(limits = c("Context","Reaction"), expand = c(.2, .05)) +
+  geom_alluvium(aes(fill =rel_dom)) +
+  geom_stratum() +
+  geom_text(stat = "stratum", aes(label = after_stat(stratum))) +
+  theme_minimal()+
+  scale_fill_colorblind()
+
+```
+
+Senders who are *not* dominant get much more avoid reactions. In other words: Dominant individuals show more avoid reactions.
+
+
 
