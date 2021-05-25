@@ -1,0 +1,41 @@
+---
+title: "Katja data visuals"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+
+library(readxl)
+library(ggalluvial)
+library(tidyverse)
+```
+
+```{r}
+data <- read_xlsx("../data/Rawdata_Compositionality_18122019.xlsx", sheet = 1)
+```
+```{r}
+
+data %>%
+  group_by(#rel_dom,
+           face,context_dyad, GEST, REACT)%>%
+  summarise(freq = n())%>%
+  filter(#rel_dom != "NA", 
+         face != "NA",
+         context_dyad != "NA",
+         GEST != "NA",
+         REACT != "NA")%>%
+  ggplot(.,
+       aes(axis1 = context_dyad, 
+           axis2 = face, 
+           axis3 = GEST, axis4 = REACT,
+           y = freq)) +
+  scale_x_discrete(limits = c("Context","Face" ,"Gesture", "Reaction"), expand = c(.2, .05)) +
+  geom_alluvium(#aes(fill = rel_dom)
+                ) +
+  geom_stratum() +
+  geom_text(stat = "stratum", aes(label = after_stat(stratum))) +
+  theme_minimal()
+
+```
+
