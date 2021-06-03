@@ -143,5 +143,36 @@ data %>%
 
 Senders who are *not* dominant get much more avoid reactions. In other words: Dominant individuals show more avoid reactions.
 
+# Relation between context and dominance
 
+```{r}
+data %>%
+  group_by(rel_dom,
+           #face,
+           #context_dyad, 
+           #GEST, 
+           REACT
+           )%>%
+  summarise(freq = n())%>%
+  filter(rel_dom != "NA", 
+         #face != "NA",
+         #context_dyad != "NA",
+         #GEST != "NA",
+         REACT != "NA"
+         )%>%
+  ggplot(.,
+       aes(#axis1 = context_dyad, 
+           #axis2 = face, 
+           #axis3 = GEST, 
+           axis4 = REACT,
+           axis5 = rel_dom,
+           y = freq)) +
+  scale_x_discrete(limits = c("Context","Dominance Relation"), expand = c(.2, .05)) +
+  geom_alluvium() +
+  geom_stratum() +
+  geom_text(stat = "stratum", aes(label = after_stat(stratum))) +
+  theme_minimal()+
+  scale_fill_colorblind()
+
+```
 
