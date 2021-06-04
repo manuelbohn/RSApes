@@ -70,7 +70,7 @@ var faceLexicon1 = function(utterance, reaction){
   }
 ```
 
-But then again, maybe we don't need any lexica since the "meaning" of the different gestures or facial expressions is assumed to be known to the listnener, nothing that needs to be inferred. So maybe we just need a meaning function that links gestures and facial expressions to reactions? With the strenght of the link to be inferred? something like this? 
+But then again, maybe we don't need any lexica since the "meaning" of the different gestures or facial expressions is assumed to be known to the listnener, nothing that needs to be inferred. So maybe we just need a meaning function that links gestures and facial expressions to reactions with some uncertainty? This meaning function could also change with the context, like you describe in section 3.1 of your problang paper. 
 
 ```js
 var gesMeaning = function(utterance){
@@ -105,8 +105,8 @@ How to put that all together in a literal listener? The listener takes in an utt
 var literalListener = function(utterance, context, relationship){
   Infer({method: "enumerate", model: function(){
     // building up the prior
-    var priorProbContext = context == "positive" ? [contextPrior, 1-contextPrior] : [1-contextPrior, contextPrior]
-    var priorProbRelation = relationship == "todom" ? [relationPrior, 1-relationPrior] : [1-relationPrior, relationPrior]
+    var priorProbContext = (context == "positive") ? [contextPrior, 1-contextPrior] : [1-contextPrior, contextPrior]
+    var priorProbRelation = (relationship == "todom") ? [relationPrior, 1-relationPrior] : [1-relationPrior, relationPrior]
     var priorProbs = priorProbContext * priorProbRelation 
 
     // taking in the different parts of the utterance
@@ -125,4 +125,4 @@ var literalListener = function(utterance, context, relationship){
 }
 ```
 
-All of this doesn't seem right. 
+All of this doesn't seem right ...

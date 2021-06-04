@@ -150,14 +150,14 @@ data %>%
   group_by(rel_dom,
            #face,
            #context_dyad, 
-           #GEST, 
+           GEST, 
            REACT
            )%>%
   summarise(freq = n())%>%
   filter(rel_dom != "NA", 
          #face != "NA",
          #context_dyad != "NA",
-         #GEST != "NA",
+         GEST != "NA",
          REACT != "NA"
          )%>%
   ggplot(.,
@@ -165,10 +165,10 @@ data %>%
            #axis2 = face, 
            #axis3 = GEST, 
            axis4 = REACT,
-           axis5 = rel_dom,
+           axis1 = rel_dom,
            y = freq)) +
   scale_x_discrete(limits = c("Context","Dominance Relation"), expand = c(.2, .05)) +
-  geom_alluvium() +
+  geom_alluvium(aes(fill =GEST)) +
   geom_stratum() +
   geom_text(stat = "stratum", aes(label = after_stat(stratum))) +
   theme_minimal()+
