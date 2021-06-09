@@ -3,18 +3,6 @@ title: "Katja data visuals"
 output: html_document
 ---
 
-```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = TRUE)
-
-library(readxl)
-library(ggalluvial)
-library(tidyverse)
-library(ggthemes)
-```
-
-```{r}
-data <- read_xlsx("../data/Rawdata_Compositionality_18122019.xlsx", sheet = 1)
-```
 # Context to reaction
 
 ```{r}

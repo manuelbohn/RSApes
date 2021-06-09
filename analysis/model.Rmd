@@ -1,0 +1,236 @@
+---
+title: "RSApes model"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+
+library(readxl)
+library(ggalluvial)
+library(tidyverse)
+library(ggthemes)
+library(rwebppl)
+library(tidyboot)
+library(ggpubr)
+```
+
+# Model
+
+## Observed scenarios
+
+```{r}
+scenarios <- '
+
+var data = [
+  {utterance: {face: "bared" , gesture: "bent" }, context: "positive", relation: "dominant"},
+  {utterance: {face: "bared" , gesture: "bent" }, context: "positive", relation: "subordinate"},
+  {utterance: {face: "bared" , gesture: "bent" }, context: "negative", relation: "dominant"},
+  {utterance: {face: "bared" , gesture: "bent" }, context: "negative", relation: "subordinate"},  
+  {utterance: {face: "bared" , gesture: "stretched" }, context: "positive", relation: "dominant"},
+  {utterance: {face: "bared" , gesture: "stretched" }, context: "positive", relation: "subordinate"},
+  {utterance: {face: "bared" , gesture: "stretched" }, context: "negative", relation: "dominant"},
+  {utterance: {face: "bared" , gesture: "stretched" }, context: "negative", relation: "subordinate"},
+  {utterance: {face: "hoot" , gesture: "bent" }, context: "positive", relation: "dominant"},
+  {utterance: {face: "hoot" , gesture: "bent" }, context: "positive", relation: "subordinate"},  
+  {utterance: {face: "hoot" , gesture: "bent" }, context: "negative", relation: "dominant"},
+  {utterance: {face: "hoot" , gesture: "bent" }, context: "negative", relation: "subordinate"},
+  {utterance: {face: "hoot" , gesture: "stretched" }, context: "positive", relation: "dominant"},
+  {utterance: {face: "hoot" , gesture: "stretched" }, context: "positive", relation: "subordinate"},
+  {utterance: {face: "hoot" , gesture: "stretched" }, context: "negative", relation: "dominant"},
+  {utterance: {face: "hoot" , gesture: "stretched" }, context: "negative", relation: "subordinate"}, 
+  {utterance: {face: "neutral" , gesture: "bent" }, context: "positive", relation: "dominant"},
+  {utterance: {face: "neutral" , gesture: "bent" }, context: "positive", relation: "subordinate"},
+  {utterance: {face: "neutral" , gesture: "bent" }, context: "negative", relation: "dominant"},
+  {utterance: {face: "neutral" , gesture: "bent" }, context: "negative", relation: "subordinate"},
+  {utterance: {face: "neutral" , gesture: "stretched" }, context: "positive", relation: "dominant"},
+  {utterance: {face: "neutral" , gesture: "stretched" }, context: "positive", relation: "subordinate"},
+  {utterance: {face: "neutral" , gesture: "stretched" }, context: "negative", relation: "dominant"},
+  {utterance: {face: "neutral" , gesture: "stretched" }, context: "negative", relation: "subordinate"}
+]
+
+'
+```
+
+## Model Utilities
+
+```{r}
+utils <- '
+
+var all_reactions = [
+  { type: "affiliate" },
+  { type: "avoid" }
+]
+
+var faceMeaning = function(utterance, reaction){
+  utterance.face == "hoot" ? flip(hootMean) ? reaction.type == "avoid" : reaction.type == "affiliate" :
+  utterance.face == "bared" ? flip(baredMean) ? reaction.type == "avoid" : reaction.type == "affiliate" :
+  utterance.face == "neutral" ? flip() ? reaction.type == "affiliate" : reaction.type == "avoid" :
+  false
+}
+
+var gesMeaning = function(utterance, reaction){
+  utterance.gesture == "stretched" ? flip(stretchMean) ? reaction.type == "avoid" : reaction.type == "affiliate" :
+  utterance.gesture == "bent" ? flip(bentMean) ? reaction.type == "avoid" : reaction.type == "affiliate" :
+  true
+}
+
+var literalListener = function(utterance, context, relationship){
+  Infer({method: "enumerate", model: function(){
+    // building up the prior
+    var priorProbContext = (context == "positive") ? contextPrior : 1-contextPrior
+    var priorProbRelation = (relationship == "dominant") ? relationPrior : 1-relationPrior
+    var priorProbs = normalize([
+      priorProbContext * priorProbRelation,
+      (1 - priorProbContext) * (1 - priorProbRelation)
+    ])
+  
+  
+    // taking in the different parts of the utterance
+    var reaction = sample(Categorical({vs: all_reactions, ps: priorProbs}))
+    
+    var gesTruthValue = gesMeaning(utterance, reaction)
+    var faceTruthValue = faceMeaning(utterance, reaction)
+
+    // Do some conditioning I guess
+    condition(gesTruthValue)
+    condition(faceTruthValue)
+
+    // return the inferred reaction
+    return reaction.type
+  }})
+}
+
+'
+```
+
+## Model Parameters
+
+```{r}
+parameters <- '
+
+//gesture meanings
+var stretchMean = .55
+var bentMean = .45
+
+// face meanings
+var hootMean = .9
+var baredMean = .8
+    
+  // priors  
+var contextPrior = .7
+var relationPrior = .25
+
+'
+```
+
+
+## Model Run
+
+```{r}
+model <- '
+
+var output = map(function(row){
+
+  var pred = literalListener(row.utterance, row.context, row.relation)
+  
+   return extend([row.utterance.gesture + "/" + row.utterance.face + "/" + row.context + "/" + row.relation, Math.exp(pred.score("avoid"))])
+
+}, data)
+
+output
+
+
+'
+```
+
+
+## Model Output
+
+```{r}
+model_predictions <-  webppl(
+  program_code = paste(scenarios, parameters, utils ,model, sep='\n')
+)%>%
+  separate(`0`, into = c("gesture", "face", "context", "relation"), sep="/")%>%
+  rename(prediction = `1`)
+```
+
+# Comparing Model to Data
+
+## Read in Data
+
+```{r}
+data <- read_xlsx("../data/Rawdata_Compositionality_18122019.xlsx", sheet = 1)
+```
+
+## Plots
+
+### Bar Plot
+
+We select all scenarios for which we have 5 or more observations.
+
+```{r}
+plot <- data %>%
+  filter(context_dyad!= "NA",
+         REACT != "NA",
+         rel_dom != "NA", 
+         face != "NA",
+         GEST != "NA")%>%
+  rename(context = context_dyad, 
+         relation = rel_dom, 
+         gesture = GEST,)%>%
+  mutate(pos_react = as.numeric(REACT == "affil"),
+         neg_react = as.numeric(REACT == "avoid"))%>%
+  group_by(context,relation,face,gesture)%>%
+  tidyboot_mean(column = pos_react)%>%
+  mutate(affiliate = mean,
+         avoid = 1-mean)%>%
+  filter(n > 4)%>%
+  select(-empirical_stat, mean)%>%
+  pivot_longer(names_to = "reaction", values_to = "proportion", cols = c(affiliate,avoid))%>%
+  mutate(ci_lower = ifelse(reaction == "avoid", 1- ci_lower, ci_lower),
+         ci_upper = ifelse(reaction == "avoid", 1- ci_upper, ci_upper))%>%
+  ungroup()%>%
+  mutate(context = recode(context, neg = "negative",pos = "positive"),
+         relation = recode(relation, todom = "dominant",nottodom = "subordinate"),
+         gesture = recode(gesture, SG = "stretched",BG = "bent"))%>%
+  left_join(model_predictions%>%
+             mutate(affiliate = 1-prediction)%>%
+             rename(avoid = prediction)%>%
+             pivot_longer(names_to = "reaction", values_to = "prediction", cols = c(affiliate,avoid)))
+
+bp <- ggplot(plot, aes(x = gesture, y = proportion))+
+  geom_bar(stat = "identity", aes(fill = reaction),position = position_dodge(), alpha = .5, col = "black")+
+  geom_errorbar(aes(ymin = ci_lower, ymax = ci_upper, group = reaction), col = "black", position = position_dodge(width = .9), width = 0, size = 1)+
+  geom_point(aes(y = prediction, group = reaction), position = position_dodge(width = .9), col = "firebrick", pch = 4, size = 2, stroke = 2)+
+  theme_few()+
+  facet_grid(relation ~  face)+
+  scale_fill_colorblind()+
+  scale_color_colorblind()
+
+```
+
+### Correlation
+
+```{r}
+cp <- plot%>%
+  filter(reaction == "affiliate")%>%
+  ggplot(aes(x = proportion, y = prediction))+
+  geom_abline(intercept = 0, slope = 1, lty = 2, alpha = .5)+
+  geom_point(aes(size = n),fill = "firebrick", col = "black", pch = 21,  stroke = 1, alpha = .75)+
+  theme_minimal()+
+  xlim(0,1)+
+  ylim(0,1)+
+  #coord_fixed()+
+  labs(x = "Data", y = "Model")+
+  scale_size(name = "Observations")+
+  stat_cor(method = "pearson", aes(x = proportion, y = prediction,label = paste(..r.label..)), inherit.aes = F, size = 4.5, r.accuracy = 0.01, cor.coef.name = "r")
+```
+
+```{r}
+ggarrange(bp,cp, widths = c(1.5,1))
+
+ggsave("../graphs/model_plot.png", width = 10, height = 3, scale = 1.5)
+```
+
+
