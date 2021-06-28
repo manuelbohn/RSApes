@@ -15,7 +15,7 @@ library(tidyboot)
 library(ggpubr)
 ```
 
-# Model
+# Literal Model
 
 ## Observed scenarios
 
@@ -75,6 +75,13 @@ var gesMeaning = function(utterance, reaction){
   true
 }
 
+'
+```
+
+## Literal Listener
+
+```{r}
+lit <- '
 var literalListener = function(utterance, context, relationship){
   Infer({method: "enumerate", model: function(){
     // building up the prior
@@ -103,6 +110,7 @@ var literalListener = function(utterance, context, relationship){
 
 '
 ```
+
 
 ## Model Parameters
 
@@ -148,8 +156,8 @@ output
 ## Model Output
 
 ```{r}
-model_predictions <-  webppl(
-  program_code = paste(scenarios, parameters, utils ,model, sep='\n')
+model_predictions <- webppl(
+  program_code = paste(scenarios, parameters, utils,lit ,model, sep='\n')
 )%>%
   separate(`0`, into = c("gesture", "face", "context", "relation"), sep="/")%>%
   rename(prediction = `1`)
@@ -233,4 +241,112 @@ ggarrange(bp,cp, widths = c(1.5,1))
 ggsave("../graphs/model_plot.png", width = 10, height = 3, scale = 1.5)
 ```
 
+# Pragmatic model
+
+Question: How can pragmatics amplify the weak meaning of a gesture?
+
+Focus is on gesture, thus all other parameters are set to .5.
+
+
+## Speaker
+
+```{r}
+speak <- '
+
+var utterancePrior = function(){
+  var gesture = uniformDraw(["stretched", "bent"])
+  var face = uniformDraw(["neutral", "bared", "hoot"])
+  return {face: face, gesture: gesture}
+}
+
+var speaker = function(reaction, context, relationship, speakerOptimality){
+  Infer({method: "enumerate", model: function(){
+        var priorProbContext = (context == "positive") ? contextPrior : 1-contextPrior
+    var priorProbRelation = (relationship == "dominant") ? relationPrior : 1-relationPrior
+    var priorProbs = normalize([
+      priorProbContext * priorProbRelation,
+      (1 - priorProbContext) * (1 - priorProbRelation)
+    ])
+    
+    var utt = utterancePrior()
+    
+    var L0 = literalListener(utt, context, relationship);
+    
+    factor(speakerOptimality * L0.score(reaction.type))
+    return utt
+  }})
+}
+
+'
+```
+
+## Pragmatic listener
+
+```{r}
+pragList <- '
+var pragmaticListener = function(utterance, context, relationship){
+  Infer({method: "enumerate", model: function(){
+    // building up the prior
+    var priorProbContext = (context == "positive") ? contextPrior : 1-contextPrior
+    var priorProbRelation = (relationship == "dominant") ? relationPrior : 1-relationPrior
+    var priorProbs = normalize([
+      priorProbContext * priorProbRelation,
+      (1 - priorProbContext) * (1 - priorProbRelation)
+    ])
+  
+      // taking in the different parts of the utterance
+  var reaction = sample(Categorical({vs: all_reactions, ps: priorProbs}))
+    
+  var S1 = speaker(reaction, context, relationship, speakerOptimality,priorProbs);
+   
+   observe(S1, utterance)
+   return reaction.type
+   
+  }})
+}
+
+'
+```
+
+## Model Parameters
+
+```{r}
+parametersPrag <- '
+
+//gesture meanings
+var stretchMean = .55
+var bentMean = .45
+
+// face meanings
+var hootMean = .5
+var baredMean = .5
+    
+// priors  
+var contextPrior = .5
+var relationPrior = .5
+
+// speaker optimality
+var speakerOptimality = 1
+
+'
+```
+
+## Model Run
+
+```{r}
+model <- '
+
+pragmaticListener({face: "neutral" , gesture: "stretched" },"negative", "subordinate")
+
+'
+```
+
+
+## Model Output
+
+```{r}
+webppl(
+  program_code = paste(parametersPrag, utils, speak, pragList,lit ,model, sep='\n')
+)
+```
 
