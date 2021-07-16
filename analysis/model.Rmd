@@ -111,19 +111,18 @@ var literalListener = function(utterance, context, relationship){
 '
 ```
 
-
 ## Model Parameters
 
 ```{r}
 parameters <- '
 
 //gesture meanings
-var stretchMean = .55
+var stretchMean = .45
 var bentMean = .45
 
 // face meanings
 var hootMean = .9
-var baredMean = .8
+var baredMean = .6
     
   // priors  
 var contextPrior = .7
@@ -171,14 +170,10 @@ model_predictions <- webppl(
 data <- read_xlsx("../data/Rawdata_Compositionality_18122019.xlsx", sheet = 1)
 ```
 
-## Plots
-
-### Bar Plot
-
 We select all scenarios for which we have 5 or more observations.
 
 ```{r}
-plot <- data %>%
+data_agg <- data %>%
   filter(context_dyad!= "NA",
          REACT != "NA",
          rel_dom != "NA", 
@@ -201,7 +196,15 @@ plot <- data %>%
   ungroup()%>%
   mutate(context = recode(context, neg = "negative",pos = "positive"),
          relation = recode(relation, todom = "dominant",nottodom = "subordinate"),
-         gesture = recode(gesture, SG = "stretched",BG = "bent"))%>%
+         gesture = recode(gesture, SG = "stretched",BG = "bent"))
+```
+
+## Plots
+
+### Bar Plot
+
+```{r}
+plot <- data_agg%>%
   left_join(model_predictions%>%
              mutate(affiliate = 1-prediction)%>%
              rename(avoid = prediction)%>%
@@ -232,14 +235,241 @@ cp <- plot%>%
   #coord_fixed()+
   labs(x = "Data", y = "Model")+
   scale_size(name = "Observations")+
+  stat_cor(method = "pearson", aes(x = proportion, y = prediction,label = paste(..r.label..)), inherit.aes = F, size = 4.5, r.accuracy = 0.01, cor.coef.name = "r")+
+  theme(panel.border = element_rect(color = "black",fill = NA,size = 1))
+```
+
+```{r}
+ggarrange(bp,cp, widths = c(1.5,1), labels = c("A","B"))
+
+ggsave("../graphs/model_plot.png", width = 10, height = 3, scale = 1.5)
+```
+
+# Reduced models
+
+## Parameters
+
+```{r}
+parametersGes <- '
+
+//gesture meanings
+var stretchMean = .45
+var bentMean = .45
+
+// face meanings
+var hootMean = .5
+var baredMean = .5
+    
+  // priors  
+var contextPrior = .5
+var relationPrior = .5
+
+'
+```
+
+```{r}
+parametersFace <- '
+
+//gesture meanings
+var stretchMean = .5
+var bentMean = .5
+
+// face meanings
+var hootMean = .9
+var baredMean = .6
+    
+  // priors  
+var contextPrior = .5
+var relationPrior = .5
+
+'
+```
+
+```{r}
+parametersContext <- '
+
+//gesture meanings
+var stretchMean = .5
+var bentMean = .5
+
+// face meanings
+var hootMean = .5
+var baredMean = .5
+    
+  // priors  
+var contextPrior = .7
+var relationPrior = .5
+'
+```
+
+
+```{r}
+parametersRelation <- '
+
+//gesture meanings
+var stretchMean = .5
+var bentMean = .5
+
+// face meanings
+var hootMean = .5
+var baredMean = .5
+    
+  // priors  
+var contextPrior = .5
+var relationPrior = .25
+
+'
+```
+
+## Model Runs
+
+```{r}
+model_predictions_gesture <- webppl(
+  program_code = paste(scenarios, parametersGes, utils,lit ,model, sep='\n')
+)%>%
+  separate(`0`, into = c("gesture", "face", "context", "relation"), sep="/")%>%
+  rename(prediction = `1`)
+
+model_predictions_face <- webppl(
+  program_code = paste(scenarios, parametersFace, utils,lit ,model, sep='\n')
+)%>%
+  separate(`0`, into = c("gesture", "face", "context", "relation"), sep="/")%>%
+  rename(prediction = `1`)
+
+model_predictions_context <- webppl(
+  program_code = paste(scenarios, parametersContext, utils,lit ,model, sep='\n')
+)%>%
+  separate(`0`, into = c("gesture", "face", "context", "relation"), sep="/")%>%
+  rename(prediction = `1`)
+
+model_predictions_relation <- webppl(
+  program_code = paste(scenarios, parametersRelation, utils,lit ,model, sep='\n')
+)%>%
+  separate(`0`, into = c("gesture", "face", "context", "relation"), sep="/")%>%
+  rename(prediction = `1`)
+
+reduced_model_predictions <- bind_rows(
+  model_predictions_gesture%>%mutate(model = "Gesture Only"),
+  model_predictions_face%>%mutate(model = "Face Only"),
+  model_predictions_context%>%mutate(model = "Context Only"),
+  model_predictions_relation%>%mutate(model = "Relation Only")
+)
+
+```
+
+## Plots
+
+### Correlation
+
+```{r}
+plotRed <- data_agg%>%
+  left_join(reduced_model_predictions%>%
+             mutate(affiliate = 1-prediction)%>%
+             rename(avoid = prediction)%>%
+             pivot_longer(names_to = "reaction", values_to = "prediction", cols = c(affiliate,avoid)))
+
+cpRed <- plotRed%>%
+  filter(reaction == "affiliate")%>%
+  ggplot(aes(x = proportion, y = prediction))+
+  geom_abline(intercept = 0, slope = 1, lty = 2, alpha = .5)+
+  geom_point(aes(size = n),fill = "#19647E", col = "black", pch = 21,  stroke = 1, alpha = .75)+
+  theme_minimal()+
+  xlim(0,1)+
+  ylim(0,1)+
+  facet_grid(~model)+
+  labs(x = "Data", y = "Model")+
+  scale_size(name = "Observations")+
+  stat_cor(method = "pearson", aes(x = proportion, y = prediction,label = paste(..r.label..)), inherit.aes = F, size = 4.5, r.accuracy = 0.01, cor.coef.name = "r",na.rm = T)+
+  theme(panel.border = element_rect(color = "black",fill = NA,size = 1))
+```
+
+```{r}
+ggarrange(ggarrange(bp,cp, widths = c(1.5,1), labels = c("A","B")), cpRed, labels = c("","C"), heights = c(1.1,1), nrow = 2)
+```
+
+```{r}
+ggsave("../graphs/model_plot_comb.png", width = 10, height = 6, scale = 1.25)
+```
+
+# Model with alternative parameter settings
+
+## Model Parameters
+
+Flip importance of gestures and facial expressions: Increase strength of "meaning" of gestures and decrease strength of facial expressions. 
+
+```{r}
+parametersAlt <- '
+
+//gesture meanings
+var stretchMean = .2
+var bentMean = .2
+
+// face meanings
+var hootMean = .6
+var baredMean = .55
+    
+  // priors  
+var contextPrior = .7
+var relationPrior = .25
+
+'
+```
+
+## Model run
+
+```{r}
+model_predictionsAlt <- webppl(
+  program_code = paste(scenarios, parametersAlt, utils,lit ,model, sep='\n')
+)%>%
+  separate(`0`, into = c("gesture", "face", "context", "relation"), sep="/")%>%
+  rename(prediction = `1`)
+```
+
+### Bar Plot
+
+We select all scenarios for which we have 5 or more observations.
+
+```{r}
+plotAlt <- data_agg%>%
+  left_join(model_predictionsAlt%>%
+             mutate(affiliate = 1-prediction)%>%
+             rename(avoid = prediction)%>%
+             pivot_longer(names_to = "reaction", values_to = "prediction", cols = c(affiliate,avoid)))
+
+bpAlt <- ggplot(plotAlt, aes(x = gesture, y = proportion))+
+  geom_bar(stat = "identity", aes(fill = reaction),position = position_dodge(), alpha = .5, col = "black")+
+  geom_errorbar(aes(ymin = ci_lower, ymax = ci_upper, group = reaction), col = "black", position = position_dodge(width = .9), width = 0, size = 1)+
+  geom_point(aes(y = prediction, group = reaction), position = position_dodge(width = .9), col = "#19647E", pch = 4, size = 2, stroke = 2)+
+  theme_few()+
+  facet_grid(relation ~  face)+
+  scale_fill_colorblind()+
+  scale_color_colorblind()
+
+```
+
+### Correlation
+
+```{r}
+cpAlt <- plotAlt%>%
+  filter(reaction == "affiliate")%>%
+  ggplot(aes(x = proportion, y = prediction))+
+  geom_abline(intercept = 0, slope = 1, lty = 2, alpha = .5)+
+  geom_point(aes(size = n),fill = "#19647E", col = "black", pch = 21,  stroke = 1, alpha = .75)+
+  theme_minimal()+
+  xlim(0,1)+
+  ylim(0,1)+
+  #coord_fixed()+
+  labs(x = "Data", y = "Model")+
+  scale_size(name = "Observations")+
   stat_cor(method = "pearson", aes(x = proportion, y = prediction,label = paste(..r.label..)), inherit.aes = F, size = 4.5, r.accuracy = 0.01, cor.coef.name = "r")
 ```
 
 ```{r}
-ggarrange(bp,cp, widths = c(1.5,1))
+ggarrange(bpAlt,cpAlt, widths = c(1.5,1))
 
-ggsave("../graphs/model_plot.png", width = 10, height = 3, scale = 1.5)
+ggsave("../graphs/model_plot_alternative_parameters.png", width = 10, height = 3, scale = 1.5)
 ```
+
 
 # Pragmatic model
 
@@ -250,57 +480,65 @@ Focus is on gesture, thus all other parameters are set to .5.
 
 ## Speaker
 
-```{r}
-speak <- '
+## Pragmatic listener
 
-var utterancePrior = function(){
-  var gesture = uniformDraw(["stretched", "bent"])
-  var face = uniformDraw(["neutral", "bared", "hoot"])
-  return {face: face, gesture: gesture}
+```{r}
+prag <- '
+
+var all_reactions = [
+  { type: "pickLeft" },
+  { type: "pickRight" }
+]
+
+var gesMeaning = function(utterance, reaction){
+  utterance.gesture == "pointLeft" ? flip(pointLeftMean) ? reaction.type == "pickLeft" : reaction.type == "pickRight":
+  true
 }
 
-var speaker = function(reaction, context, relationship, speakerOptimality){
+
+var literalListener = function(utterance){
   Infer({method: "enumerate", model: function(){
-        var priorProbContext = (context == "positive") ? contextPrior : 1-contextPrior
-    var priorProbRelation = (relationship == "dominant") ? relationPrior : 1-relationPrior
-    var priorProbs = normalize([
-      priorProbContext * priorProbRelation,
-      (1 - priorProbContext) * (1 - priorProbRelation)
-    ])
+  
+    var reaction = sample(Categorical({vs: all_reactions, ps: [0.5,0.5]}))
     
+    var gesTruthValue = gesMeaning(utterance, reaction)
+
+    condition(gesTruthValue)
+
+    return reaction.type
+  }})
+}
+
+
+var utterancePrior = function(){
+  var gesture = uniformDraw(["pointLeft", "pointRight"])
+  return {gesture: gesture}
+}
+
+
+var speaker = function(reaction, speakerOptimality){
+  Infer({method: "enumerate", model: function(){
+        
     var utt = utterancePrior()
-    
-    var L0 = literalListener(utt, context, relationship);
+    var L0 = literalListener(utt);
     
     factor(speakerOptimality * L0.score(reaction.type))
+    
     return utt
   }})
 }
 
-'
-```
 
-## Pragmatic listener
-
-```{r}
-pragList <- '
-var pragmaticListener = function(utterance, context, relationship){
+var pragmaticListener = function(utterance){
   Infer({method: "enumerate", model: function(){
-    // building up the prior
-    var priorProbContext = (context == "positive") ? contextPrior : 1-contextPrior
-    var priorProbRelation = (relationship == "dominant") ? relationPrior : 1-relationPrior
-    var priorProbs = normalize([
-      priorProbContext * priorProbRelation,
-      (1 - priorProbContext) * (1 - priorProbRelation)
-    ])
+
+  var reaction = sample(Categorical({vs: all_reactions, ps: [0.5,0.5]}))
   
-      // taking in the different parts of the utterance
-  var reaction = sample(Categorical({vs: all_reactions, ps: priorProbs}))
-    
-  var S1 = speaker(reaction, context, relationship, speakerOptimality,priorProbs);
-   
-   observe(S1, utterance)
-   return reaction.type
+  var S1 = speaker(reaction, speakerOptimality);
+  
+  observe(S1, utterance)
+  
+  return reaction.type
    
   }})
 }
@@ -310,43 +548,98 @@ var pragmaticListener = function(utterance, context, relationship){
 
 ## Model Parameters
 
+`stretchMean` is now taken to represent a gesture (or other type of signal) with only a very weak meaning. 
+
 ```{r}
 parametersPrag <- '
 
-//gesture meanings
-var stretchMean = .55
-var bentMean = .45
+  //  gesture meanings
+    var pointLeftMean = .55
+'
+```
 
-// face meanings
-var hootMean = .5
-var baredMean = .5
-    
-// priors  
-var contextPrior = .5
-var relationPrior = .5
+```{r}
+speakOpt1 <- '
 
-// speaker optimality
 var speakerOptimality = 1
+'
+```
 
+
+```{r}
+speakOpt5 <- '
+
+var speakerOptimality = 5
+'
+```
+
+```{r}
+speakOpt10 <- '
+
+var speakerOptimality = 10
 '
 ```
 
 ## Model Run
 
 ```{r}
-model <- '
+modelPrag <- '
 
-pragmaticListener({face: "neutral" , gesture: "stretched" },"negative", "subordinate")
+pragmaticListener({gesture: "pointLeft" })
 
 '
 ```
 
+```{r}
+modelLit <- '
+
+literalListener({gesture: "pointLeft" })
+
+'
+```
 
 ## Model Output
 
 ```{r}
-webppl(
-  program_code = paste(parametersPrag, utils, speak, pragList,lit ,model, sep='\n')
+lit <- webppl(
+  program_code = paste(parametersPrag, prag, modelLit, sep='\n')
 )
+
+prag1 <- webppl(
+  program_code = paste(parametersPrag,speakOpt1, prag, modelPrag, sep='\n')
+)
+
+prag5 <- webppl(
+  program_code = paste(parametersPrag,speakOpt5, prag, modelPrag, sep='\n')
+)
+
+prag10 <- webppl(
+  program_code = paste(parametersPrag,speakOpt10, prag, modelPrag, sep='\n')
+)
+
+
+pragPlot <- bind_rows(
+  lit %>%mutate(model = "literal", alpha = ""),
+  prag1 %>%mutate(model = "pragmatic", alpha = "1"),
+  prag5 %>%mutate(model = "pragmatic", alpha = "5"),
+  prag10 %>%mutate(model = "pragmatic", alpha = "10")
+)%>%
+  mutate(alpha = factor(alpha, levels = c("","1","5","10")))%>%
+  filter(support == "pickLeft")
+```
+
+## Plot
+
+```{r}
+
+ggplot(pragPlot, aes(x = alpha, y = prob))+
+  geom_bar(stat = "identity", aes(fill = support),position = position_dodge(), alpha = .5, col = "black")+
+  geom_hline(yintercept = 0.5, lty = 2, alpha = .75)+
+  theme_few()+
+  facet_grid( ~model, scales = "free_x",space = "free_x")+
+  scale_fill_manual(values = c("#90BE6D"))+
+  guides(fill = "none")+
+  ylim(0,1)
+
 ```
 
