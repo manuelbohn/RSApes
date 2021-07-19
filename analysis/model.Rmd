@@ -485,13 +485,14 @@ Focus is on gesture, thus all other parameters are set to .5.
 ```{r}
 prag <- '
 
-var all_reactions = [
-  { type: "pickLeft" },
-  { type: "pickRight" }
+var all_locations = [
+  { type: "left" },
+  { type: "right" }
 ]
 
-var gesMeaning = function(utterance, reaction){
-  utterance.gesture == "pointLeft" ? flip(pointLeftMean) ? reaction.type == "pickLeft" : reaction.type == "pickRight":
+var pointMeaning = function(utterance, location){
+  utterance.point == "left" ? flip(pointStrength) ? location.type == "left" : location.type == "right" :
+  utterance.point == "right" ? flip(pointStrength) ? location.type == "right" : location.type == "left" :
   true
 }
 
@@ -499,30 +500,30 @@ var gesMeaning = function(utterance, reaction){
 var literalListener = function(utterance){
   Infer({method: "enumerate", model: function(){
   
-    var reaction = sample(Categorical({vs: all_reactions, ps: [0.5,0.5]}))
+    var location = sample(Categorical({vs: all_locations, ps: [0.5,0.5]}))
     
-    var gesTruthValue = gesMeaning(utterance, reaction)
+    var gesTruthValue = pointMeaning(utterance, location)
 
     condition(gesTruthValue)
 
-    return reaction.type
+    return location.type
   }})
 }
 
 
 var utterancePrior = function(){
-  var gesture = uniformDraw(["pointLeft", "pointRight"])
-  return {gesture: gesture}
+  var point = uniformDraw(["left", "right"])
+  return {point: point}
 }
 
 
-var speaker = function(reaction, speakerOptimality){
+var speaker = function(location, speakerOptimality){
   Infer({method: "enumerate", model: function(){
         
     var utt = utterancePrior()
     var L0 = literalListener(utt);
     
-    factor(speakerOptimality * L0.score(reaction.type))
+    factor(speakerOptimality * L0.score(location.type))
     
     return utt
   }})
@@ -532,13 +533,13 @@ var speaker = function(reaction, speakerOptimality){
 var pragmaticListener = function(utterance){
   Infer({method: "enumerate", model: function(){
 
-  var reaction = sample(Categorical({vs: all_reactions, ps: [0.5,0.5]}))
+  var location = sample(Categorical({vs: all_locations, ps: [0.5,0.5]}))
   
-  var S1 = speaker(reaction, speakerOptimality);
+  var S1 = speaker(location, speakerOptimality);
   
   observe(S1, utterance)
   
-  return reaction.type
+  return location.type
    
   }})
 }
@@ -554,7 +555,7 @@ var pragmaticListener = function(utterance){
 parametersPrag <- '
 
   //  gesture meanings
-    var pointLeftMean = .55
+    var pointStrength = .525
 '
 ```
 
@@ -585,7 +586,7 @@ var speakerOptimality = 10
 ```{r}
 modelPrag <- '
 
-pragmaticListener({gesture: "pointLeft" })
+pragmaticListener({point: "left" })
 
 '
 ```
@@ -593,7 +594,7 @@ pragmaticListener({gesture: "pointLeft" })
 ```{r}
 modelLit <- '
 
-literalListener({gesture: "pointLeft" })
+literalListener({point: "left" })
 
 '
 ```
@@ -624,8 +625,8 @@ pragPlot <- bind_rows(
   prag5 %>%mutate(model = "pragmatic", alpha = "5"),
   prag10 %>%mutate(model = "pragmatic", alpha = "10")
 )%>%
-  mutate(alpha = factor(alpha, levels = c("","1","5","10")))%>%
-  filter(support == "pickLeft")
+  mutate(alpha = factor(alpha, levels = c("NA","1","5","10")))%>%
+  filter(support == "left")
 ```
 
 ## Plot
@@ -633,13 +634,16 @@ pragPlot <- bind_rows(
 ```{r}
 
 ggplot(pragPlot, aes(x = alpha, y = prob))+
-  geom_bar(stat = "identity", aes(fill = support),position = position_dodge(), alpha = .5, col = "black")+
+  geom_bar(stat = "identity", aes(fill = model, alpha = alpha),position = position_dodge(), col = "black")+
   geom_hline(yintercept = 0.5, lty = 2, alpha = .75)+
   theme_few()+
   facet_grid( ~model, scales = "free_x",space = "free_x")+
-  scale_fill_manual(values = c("#90BE6D"))+
-  guides(fill = "none")+
+  scale_fill_ptol()+
+  labs(y = "Proportion gesture congruent choice", x = "Speaker informativeness")+
+  guides(fill = "none", alpha = "none")+
   ylim(0,1)
 
 ```
-
+```{r}
+ggsave("../graphs/model_plot_prag.png", width = 3, height = 3, scale = 1.25)
+```
