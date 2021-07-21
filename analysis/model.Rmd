@@ -384,7 +384,7 @@ cpRed <- plotRed%>%
 ```
 
 ```{r}
-ggarrange(ggarrange(bp,cp, widths = c(1.5,1), labels = c("A","B")), cpRed, labels = c("","C"), heights = c(1.1,1), nrow = 2)
+ggarrange(ggarrange(bp,cp, widths = c(1.5,1), labels = c("(a)","(b)"), font.label = list(family = "serif", face = "italic")), cpRed, labels = c("","(c)"), heights = c(1.1,1), nrow = 2, font.label = list(family = "serif", face = "italic"))
 ```
 
 ```{r}
@@ -555,7 +555,7 @@ var pragmaticListener = function(utterance){
 parametersPrag <- '
 
   //  gesture meanings
-    var pointStrength = .525
+    var pointStrength = .53
 '
 ```
 
@@ -599,6 +599,14 @@ literalListener({point: "left" })
 '
 ```
 
+```{r}
+modelSpeak <- '
+
+speaker({ type: "left" }, speakerOptimality)
+
+'
+```
+
 ## Model Output
 
 ```{r}
@@ -618,6 +626,13 @@ prag10 <- webppl(
   program_code = paste(parametersPrag,speakOpt10, prag, modelPrag, sep='\n')
 )
 
+speak5 <- webppl(
+  program_code = paste(parametersPrag,speakOpt5, prag, modelSpeak, sep='\n')
+)
+
+speak10 <- webppl(
+  program_code = paste(parametersPrag,speakOpt10, prag, modelSpeak, sep='\n')
+)
 
 pragPlot <- bind_rows(
   lit %>%mutate(model = "literal", alpha = ""),
