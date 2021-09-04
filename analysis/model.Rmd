@@ -84,6 +84,7 @@ var gesMeaning = function(utterance, reaction){
 lit <- '
 var literalListener = function(utterance, context, relationship){
   Infer({method: "enumerate", model: function(){
+    
     // building up the prior
     var priorProbContext = (context == "positive") ? contextPrior : 1-contextPrior
     var priorProbRelation = (relationship == "dominant") ? relationPrior : 1-relationPrior
@@ -99,11 +100,11 @@ var literalListener = function(utterance, context, relationship){
     var gesTruthValue = gesMeaning(utterance, reaction)
     var faceTruthValue = faceMeaning(utterance, reaction)
 
-    // Do some conditioning I guess
+    // Condition on gesture and facial expression
     condition(gesTruthValue)
     condition(faceTruthValue)
 
-    // return the inferred reaction
+    // return the inferred reaction (intention)
     return reaction.type
   }})
 }
@@ -117,8 +118,8 @@ var literalListener = function(utterance, context, relationship){
 parameters <- '
 
 //gesture meanings
-var stretchMean = .45
-var bentMean = .45
+var stretchMean = .53
+var bentMean = .47
 
 // face meanings
 var hootMean = .9
@@ -241,20 +242,20 @@ cp <- plot%>%
 
 ```{r}
 ggarrange(bp,cp, widths = c(1.5,1), labels = c("A","B"))
-
-ggsave("../graphs/model_plot.png", width = 10, height = 3, scale = 1.5)
 ```
 
 # Reduced models
 
 ## Parameters
 
+Set all parameters to 0.5, except for one. 
+
 ```{r}
 parametersGes <- '
 
 //gesture meanings
-var stretchMean = .45
-var bentMean = .45
+var stretchMean = .53
+var bentMean = .47
 
 // face meanings
 var hootMean = .5
@@ -383,14 +384,6 @@ cpRed <- plotRed%>%
   theme(panel.border = element_rect(color = "black",fill = NA,size = 1))
 ```
 
-```{r}
-ggarrange(ggarrange(bp,cp, widths = c(1.5,1), labels = c("(a)","(b)"), font.label = list(family = "serif", face = "italic")), cpRed, labels = c("","(c)"), heights = c(1.1,1), nrow = 2, font.label = list(family = "serif", face = "italic"))
-```
-
-```{r}
-ggsave("../graphs/model_plot_comb.png", width = 10, height = 6, scale = 1.25)
-```
-
 # Model with alternative parameter settings
 
 ## Model Parameters
@@ -401,7 +394,7 @@ Flip importance of gestures and facial expressions: Increase strength of "meanin
 parametersAlt <- '
 
 //gesture meanings
-var stretchMean = .2
+var stretchMean = .8
 var bentMean = .2
 
 // face meanings
@@ -659,6 +652,12 @@ ggplot(pragPlot, aes(x = alpha, y = prob))+
   ylim(0,1)
 
 ```
+# Figure 1 in paper
+
 ```{r}
-ggsave("../graphs/model_plot_prag.png", width = 3, height = 3, scale = 1.25)
+ggarrange(ggarrange(bp,cp, widths = c(1.5,1), labels = c("(a)","(b)"), font.label = list(family = "serif", face = "italic")), cpRed, labels = c("","(c)"), heights = c(1.1,1), nrow = 2, font.label = list(family = "serif", face = "italic"))
+```
+
+```{r}
+ggsave("../graphs/model_plot_comb.png", width = 10, height = 6, scale = 1.25)
 ```
