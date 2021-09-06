@@ -659,5 +659,5 @@ ggarrange(ggarrange(bp,cp, widths = c(1.5,1), labels = c("(a)","(b)"), font.labe
 ```
 
 ```{r}
-ggsave("../graphs/model_plot_comb.png", width = 10, height = 6, scale = 1.25)
+ggsave("../graphs/Fig1.png", width = 10, height = 6, scale = 1.25)
 ```

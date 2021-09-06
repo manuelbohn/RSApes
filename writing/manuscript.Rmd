@@ -1,0 +1,87 @@
+---
+title: "Great ape communication as contextual social inference: a computational modeling perspective"
+
+shorttitle        : "Computational model of great ape communication"
+
+author: 
+  - name          : "Manuel Bohn"
+    affiliation   : "1"
+    corresponding : yes    # Define only one corresponding author
+    address       : "Max Planck Institute for Evolutionary Anthropology, Deutscher Platz 6, 04103 Leipzig, Germany"
+    email         : "manuel_bohn@eva.mpg.de"
+  - name          : "Katja Liebal"
+    affiliation   : "2"
+  - name          : "Michael Henry Tessler"
+    affiliation   : "3"
+
+affiliation:
+  - id            : "1"
+    institution   : "Department of Comparative Cultural Psychology, Max Planck Institute for Evolutionary Anthropology"
+  - id            : "2"
+    institution   : "Institute of Biology, Leipzig University"
+  - id            : "3"
+    institution   : "Department of Brain and Cognitive Sciences, Massachusetts Institute of Technology"
+
+abstract: |
+  Human communication ...
+
+keywords          : "Communication, Primates, Social cognition, Evolution, Computational modeling"
+
+bibliography      : "library.bib"
+csl: philosophical-transactions-of-the-royal-society-b.csl
+
+floatsintext      : yes
+figurelist        : no
+tablelist         : no
+footnotelist      : no
+linenumbers       : yes
+mask              : no
+draft             : no
+
+documentclass     : "apa6"
+classoption       : "man"
+output            : papaja::apa6_pdf
+
+header-includes:
+  - \usepackage{setspace}
+  - \captionsetup[figure]{font={stretch=1}}
+---
+
+```{r setup, include = FALSE}
+library(papaja)
+library(tidyverse)
+```
+
+
+```{r fig1, include = T, fig.align = "center", fig.cap = "...", out.width="100%"}
+knitr::include_graphics("../graphs/Fig1.png")
+```
+
+Awesome paper [@levinson2006human; @brentari2017language].
+
+```{r fig2, include = T, fig.align = "center", fig.cap = "...", out.width="100%"}
+knitr::include_graphics("../graphs/Fig2.png")
+```
+
+
+\begin{equation}
+P^{no\_wk}_{L_1}(r \mid u; \{\rho_i, \alpha_i\, \theta_{i}\})\propto P_{S_1}(u \mid r; \{\alpha_i, \theta_{i}\}) \cdot P(r \mid \rho_i)
+\end{equation}
+
+
+\newpage
+
+# References
+```{r create_r-references}
+r_refs(file = "r-references.bib")
+```
+
+\begingroup
+\setlength{\parindent}{-0.5in}
+\setlength{\leftskip}{0.5in}
+
+<div id = "refs"></div>
+\endgroup
+
+# Acknowledgements
+
