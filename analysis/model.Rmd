@@ -216,8 +216,9 @@ bp <- ggplot(plot, aes(x = gesture, y = proportion))+
   geom_errorbar(aes(ymin = ci_lower, ymax = ci_upper, group = reaction), col = "black", position = position_dodge(width = .9), width = 0, size = 1)+
   geom_point(aes(y = prediction, group = reaction), position = position_dodge(width = .9), col = "firebrick", pch = 4, size = 2, stroke = 2)+
   theme_few()+
+  labs(x = "Gesture type", y = "Proportion reaction")+
   facet_grid(relation ~  face)+
-  scale_fill_colorblind()+
+  scale_fill_colorblind(name = "Reaction type")+
   scale_color_colorblind()
 
 ```
@@ -234,7 +235,7 @@ cp <- plot%>%
   xlim(0,1)+
   ylim(0,1)+
   #coord_fixed()+
-  labs(x = "Data", y = "Model")+
+  labs(x = "Data", y = "Model predictions")+
   scale_size(name = "Observations")+
   stat_cor(method = "pearson", aes(x = proportion, y = prediction,label = paste(..r.label..)), inherit.aes = F, size = 4.5, r.accuracy = 0.01, cor.coef.name = "r")+
   theme(panel.border = element_rect(color = "black",fill = NA,size = 1))
@@ -350,10 +351,10 @@ model_predictions_relation <- webppl(
   rename(prediction = `1`)
 
 reduced_model_predictions <- bind_rows(
-  model_predictions_gesture%>%mutate(model = "Gesture Only"),
-  model_predictions_face%>%mutate(model = "Face Only"),
-  model_predictions_context%>%mutate(model = "Context Only"),
-  model_predictions_relation%>%mutate(model = "Relation Only")
+  model_predictions_gesture%>%mutate(model = "Gesture only"),
+  model_predictions_face%>%mutate(model = "Face only"),
+  model_predictions_context%>%mutate(model = "Context only"),
+  model_predictions_relation%>%mutate(model = "Relation only")
 )
 
 ```
@@ -378,7 +379,7 @@ cpRed <- plotRed%>%
   xlim(0,1)+
   ylim(0,1)+
   facet_grid(~model)+
-  labs(x = "Data", y = "Model")+
+  labs(x = "Data", y = "Model predictions")+
   scale_size(name = "Observations")+
   stat_cor(method = "pearson", aes(x = proportion, y = prediction,label = paste(..r.label..)), inherit.aes = F, size = 4.5, r.accuracy = 0.01, cor.coef.name = "r",na.rm = T)+
   theme(panel.border = element_rect(color = "black",fill = NA,size = 1))
@@ -434,8 +435,9 @@ bpAlt <- ggplot(plotAlt, aes(x = gesture, y = proportion))+
   geom_errorbar(aes(ymin = ci_lower, ymax = ci_upper, group = reaction), col = "black", position = position_dodge(width = .9), width = 0, size = 1)+
   geom_point(aes(y = prediction, group = reaction), position = position_dodge(width = .9), col = "#19647E", pch = 4, size = 2, stroke = 2)+
   theme_few()+
+  labs(x = "Gesture type", y = "Proportion reaction")+
   facet_grid(relation ~  face)+
-  scale_fill_colorblind()+
+  scale_fill_colorblind(name = "Reaction type")+
   scale_color_colorblind()
 
 ```
@@ -452,7 +454,7 @@ cpAlt <- plotAlt%>%
   xlim(0,1)+
   ylim(0,1)+
   #coord_fixed()+
-  labs(x = "Data", y = "Model")+
+  labs(x = "Data", y = "Model predictions")+
   scale_size(name = "Observations")+
   stat_cor(method = "pearson", aes(x = proportion, y = prediction,label = paste(..r.label..)), inherit.aes = F, size = 4.5, r.accuracy = 0.01, cor.coef.name = "r")
 ```
@@ -652,7 +654,7 @@ ggplot(pragPlot, aes(x = alpha, y = prob))+
   ylim(0,1)
 
 ```
-# Figure 1 in paper
+# Figure 1
 
 ```{r}
 ggarrange(ggarrange(bp,cp, widths = c(1.5,1), labels = c("(a)","(b)"), font.label = list(family = "serif", face = "italic")), cpRed, labels = c("","(c)"), heights = c(1.1,1), nrow = 2, font.label = list(family = "serif", face = "italic"))
