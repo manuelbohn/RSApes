@@ -13,6 +13,7 @@ library(ggthemes)
 library(rwebppl)
 library(tidyboot)
 library(ggpubr)
+
 ```
 
 # Literal Model
@@ -205,6 +206,29 @@ data_agg <- data %>%
 ### Bar Plot
 
 ```{r}
+model_plot <- model_predictions%>%
+  mutate(affiliate = 1-prediction)%>%
+             rename(avoid = prediction)%>%
+             pivot_longer(names_to = "reaction", values_to = "prediction", cols = c(affiliate,avoid))%>%
+  left_join(data_agg)
+
+
+mbp <- ggplot(model_plot, aes(x = gesture, y = proportion))+
+  geom_bar(stat = "identity", aes(fill = reaction), col = "white", position = position_dodge(), alpha = .5, fill = "white")+
+  geom_errorbar(aes(ymin = ci_lower, ymax = ci_upper, group = reaction), col = "white", position = position_dodge(width = .9), width = 0, size = 1)+
+  geom_point(aes(y = prediction, group = reaction, col = reaction), position = position_dodge(width = .9), pch = 4, size = 2, stroke = 2)+
+  theme_few()+
+  labs(x = "Gesture type", y = "Proportion reaction")+
+  facet_grid(relation ~  context + face)+
+  scale_fill_colorblind(name = "Reaction type")+
+  scale_color_colorblind(name = "Reaction type")
+```
+```{r}
+ggsave("../graphs/model_pred.pdf", width = 16, height = 6, scale = 1)
+```
+
+
+```{r}
 plot <- data_agg%>%
   left_join(model_predictions%>%
              mutate(affiliate = 1-prediction)%>%
@@ -239,6 +263,10 @@ cp <- plot%>%
   scale_size(name = "Observations")+
   stat_cor(method = "pearson", aes(x = proportion, y = prediction,label = paste(..r.label..)), inherit.aes = F, size = 4.5, r.accuracy = 0.01, cor.coef.name = "r")+
   theme(panel.border = element_rect(color = "black",fill = NA,size = 1))
+```
+
+```{r}
+ggsave("../graphs/correlation.pdf", width = 8, height = 6, scale = 1)
 ```
 
 ```{r}
@@ -364,25 +392,40 @@ reduced_model_predictions <- bind_rows(
 ### Correlation
 
 ```{r}
+cor_labels <-  data_agg%>%
+  left_join(reduced_model_predictions%>%
+             mutate(affiliate = 1-prediction)%>%
+             rename(avoid = prediction)%>%
+             pivot_longer(names_to = "reaction", values_to = "prediction", cols = c(affiliate,avoid)))%>%
+  group_by(model)%>%
+  summarise(cor = cor(proportion,prediction))%>%
+  mutate(cor = round(cor,2))
+
 plotRed <- data_agg%>%
   left_join(reduced_model_predictions%>%
              mutate(affiliate = 1-prediction)%>%
              rename(avoid = prediction)%>%
-             pivot_longer(names_to = "reaction", values_to = "prediction", cols = c(affiliate,avoid)))
+             pivot_longer(names_to = "reaction", values_to = "prediction", cols = c(affiliate,avoid)))%>%
+  left_join(cor_labels)
 
-cpRed <- plotRed%>%
-  filter(reaction == "affiliate")%>%
-  ggplot(aes(x = proportion, y = prediction))+
+
+cpRed <- ggplot()+
   geom_abline(intercept = 0, slope = 1, lty = 2, alpha = .5)+
-  geom_point(aes(size = n),fill = "#19647E", col = "black", pch = 21,  stroke = 1, alpha = .75)+
+  geom_point(data = plotRed%>% filter(reaction == "affiliate"), aes(size = n,x = proportion, y = prediction),fill = "#19647E", col = "black", pch = 21,  stroke = 1, alpha = .75)+
   theme_minimal()+
+  geom_text(data = cor_labels, aes(label = paste0("italic(r) == ", cor)), x = 0, y =0.96, hjust = 0, parse = TRUE)+
+  #geom_text(data = cor_labels, aes(label = cor), x = 0, y =1, hjust = 0)+
   xlim(0,1)+
   ylim(0,1)+
   facet_grid(~model)+
   labs(x = "Data", y = "Model predictions")+
   scale_size(name = "Observations")+
-  stat_cor(method = "pearson", aes(x = proportion, y = prediction,label = paste(..r.label..)), inherit.aes = F, size = 4.5, r.accuracy = 0.01, cor.coef.name = "r",na.rm = T)+
+  #stat_cor(method = "pearson", aes(x = proportion, y = prediction,label = paste(..r.label..)), inherit.aes = F, size = 4.5, r.accuracy = 0.01, cor.coef.name = "r",na.rm = T)+
   theme(panel.border = element_rect(color = "black",fill = NA,size = 1))
+```
+
+```{r}
+ggsave("../graphs/correlation_reduced.pdf", width = 16, height = 4, scale = 1)
 ```
 
 # Model with alternative parameter settings
@@ -657,9 +700,9 @@ ggplot(pragPlot, aes(x = alpha, y = prob))+
 # Figure 1
 
 ```{r}
-ggarrange(ggarrange(bp,cp, widths = c(1.5,1), labels = c("(a)","(b)"), font.label = list(family = "serif", face = "italic")), cpRed, labels = c("","(c)"), heights = c(1.1,1), nrow = 2, font.label = list(family = "serif", face = "italic"))
+ggarrange(ggarrange(bp,cp, widths = c(1.5,1), labels = c("(a)","(b)"), font.label = list(family = "serif", face = "italic"), hjust = -0.1), cpRed, labels = c("","(c)"), heights = c(1.1,1), nrow = 2, font.label = list(family = "serif", face = "italic"), hjust = -0.1)
 ```
 
 ```{r}
-ggsave("../graphs/Fig1.png", width = 10, height = 6, scale = 1.25)
+ggsave("../graphs/Fig2.png", width = 11, height = 6, scale = 1.25, bg = "white")
 ```

@@ -1,6 +1,12 @@
 
 .DS_Store
 
+*.pptx
+
+#graphs/*
+
+writing/revision/*
+
 # History files
 .Rhistory
 .Rapp.history

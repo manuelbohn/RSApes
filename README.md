@@ -2,11 +2,11 @@
 
 ## Paper
 
-Bohn, M., Liebal, K., & Tessler, M. H (2021). [Great ape communication as contextual social inference: a computational modeling perspective](https://psyarxiv.com/yd9k4). *PsyArXiv*. doi:10.31234/osf.io/yd9k4
+Bohn, M., Liebal, K., Oña, L., & Tessler, M. H (2021). [Great ape communication as contextual social inference: a computational modeling perspective](https://psyarxiv.com/yd9k4). *PsyArXiv*. doi:10.31234/osf.io/yd9k4
 
 
 ## Structure
 
--   Paper can be found in `writing/`.
+-   Paper: `writing/manuscript.*`.
 
--   Model can be found in `analysis/model.Rmd`.
+-   Model: `analysis/model.Rmd`.
