@@ -3,9 +3,10 @@
 
 *.pptx
 
-#graphs/*
+graphs/*
 
 writing/revision/*
+writing/2nd_revision/*
 
 # History files
 .Rhistory
